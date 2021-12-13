@@ -18,5 +18,6 @@ const printMatrix = (matrix, separator="") => {
 module.exports = {
     getNumbersFromFile,
     getFileLines,
-    printMatrix
+    printMatrix,
+    getFileContent
 }
