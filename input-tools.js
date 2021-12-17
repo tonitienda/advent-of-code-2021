@@ -9,7 +9,7 @@ const getNumbersFromFile = (localpath, splitBy = '\r\n') => getFileContent(local
 const printMatrix = (matrix, separator="") => {
     for(let i = 0; i < matrix.length; i++) {
         for(let j=0; j < matrix[i].length; j++) {
-            process.stdout.write(`${matrix[i][j]}${separator}`)
+            process.stdout.write(`${matrix[i][j] === Infinity ? "" : matrix[i][j]}${separator}`)
         }
         console.log()
     }
