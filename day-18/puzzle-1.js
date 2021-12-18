@@ -1,7 +1,13 @@
 const { getFileLines } = require('../input-tools')
 
-const homeworkLines = getFileLines('day-18/test.txt')
+const homeworkLines = getFileLines('day-18/test0.txt')
 
+
+const explode = (tree) => {
+    
+
+    return tree
+}
 
 const makeTree = (expression, parent = null, depth = 0) => {
     const [l,r] = expression
@@ -14,6 +20,15 @@ const makeTree = (expression, parent = null, depth = 0) => {
     node.depth = depth
     
     return node
+}
+
+const makeArray = (tree) => {
+    const { left, right } = tree 
+
+    const leftValue = left.parent ? makeArray(left) : left 
+    const rightValue = right.parent ? makeArray(right) : right 
+
+    return [leftValue, rightValue]
 }
 
 const calculateMagnitude = (tree) => {
@@ -54,7 +69,28 @@ const add = (tree1, tree2) => {
      return node
 }
 
-// const [first, second, ...rest] = homeworkLines 
+const printTree = tree => console.log(JSON.stringify(makeArray(tree)))
+
+let [first, ...rest] = homeworkLines
+
+let current = makeTree(eval(first))
+
+while(rest.length > 0) {
+    let [next, ...tail] = rest 
+    rest = tail
+
+    const toAdd =  makeTree(eval(next))
+
+    printTree(current)
+    printTree(toAdd)
+
+    const joined = add(current, toAdd)
+    const exploded = explode(joined)
+}
+
+//console.log(first, second, JSON.stringify(makeArray(add(makeTree(eval(first)), makeTree(eval(second))))))
+
+
 // console.log(calculateMagnitude(makeTree([[1, 2], [[3, 4], 5]])), '=>', 143)
 // console.log(calculateMagnitude(makeTree([[[[0, 7], 4], [[7, 8], [6, 0]]], [8, 1]])), '=>', 1384)
 // console.log(calculateMagnitude(makeTree([[[[1, 1], [2, 2]], [3, 3]], [4, 4]])), '=>', 445)
@@ -63,16 +99,3 @@ const add = (tree1, tree2) => {
 // console.log(calculateMagnitude(makeTree([[[[8, 7], [7, 7]], [[8, 6], [7, 7]]], [[[0, 7], [6, 6]], [8, 7]]])), '=>', 3488)
 // console.log(calculateMagnitude(makeTree([1,1])))
 // console.log(calculateMagnitude(makeTree([[[[4,3],4],4],[7,[[8,4],9]]])))
-
-const first = [1,1]
-const second = [2,2]
-
-const left = makeTree(first)
-const right = makeTree(second)
-
-console.log(left)
-console.log(right)
-
-const tree = add(left, right)
-
-console.log(tree)
