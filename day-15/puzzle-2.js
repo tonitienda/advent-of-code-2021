@@ -61,9 +61,9 @@ const getCost = (points, i, j) => {
     }
     if(!costsCache[i][j]) {
         const adder = Math.floor(Math.max(i, j) / points.length)
-        const cost = points[i % points.length][j % points.length] % 9
+        const cost = points[i % points.length][j % points.length]
 
-        costsCache[i][j] = cost + adder
+        costsCache[i][j] = (cost + adder) % 10
     }
 
     return costsCache[i][j]
@@ -96,18 +96,52 @@ const setDistance = (distances, i, j, distance) => {
     distances[i][j] = distance
 }
 
+const printDistances = (distances) => {
+    console.log()
+    for(var i=0; i< distances.length; i++){
+        console.log()
+        for(var j=0; j<distances[i].length; j++) {
+            if(distances[i][j] >= 0) {
+                process.stdout.write((distances[i][j]+"    ").substring(0,4))
+            } else {
+                process.stdout.write("    ")
+            }
+        }
+    }
+    console.log()
+}
+
+
+const printPoints = (points) => {
+    console.log()
+    for(var i=0; i< points.length * 5; i++){
+        console.log()
+        for(var j=0; j<distances[i].length * 5; j++) {
+            const cost = getCost(points, i, j)
+            if(cost < Infinity) {
+                process.stdout.write((cost+"   ").substring(0,3))
+            } else {
+                process.stdout.write("   ")
+            }
+        }
+    }
+    console.log()
+}
+
+
+
 const dijkstra = (distances, points, destPoint) => {
-    const path = {}
+    const visited = {}
     let found = false
     while(!found) {
-        const node = findLowestNode(distances, path)
+        const node = findLowestNode(distances, visited)
         // console.log(`NODE`)
         // console.log(node)
         const id = `${node[0]}-${node[1]}`
-        path[id] = true
+        visited[id] = true
 
         if(node[0] === destPoint[0] && node[1] === destPoint[1] ) {
-            return path
+            return visited
         }
 
         const parentDistance = getDistance(distances, node[0], node[1])
@@ -117,17 +151,23 @@ const dijkstra = (distances, points, destPoint) => {
         for(let [i,j] of adjacent) {
             const cost = getCost(points, i,j)
             const currentDistance = getDistance(distances, i, j)
+            const finalDistance = Math.min(currentDistance, parentDistance + cost )
+
+            if(( i === 0 && j === 1) || (i === 1 && j === 0)) {
+                console.log([i,j], {cost, currentDistance, parentDistance, finalDistance})
+            }
             
+
             // console.log(`Cost: `, cost, `currentDistance`, currentDistance, 'parentDistance', parentDistance)
 
-            setDistance(distances, i, j, Math.min(currentDistance, parentDistance + cost ))
+            setDistance(distances, i, j,finalDistance)
 
         }
     }
 }
 
 
-const points = getFileLines('day-15/input.txt').map(l => l.split("").map(Number))
+const points = getFileLines('day-15/test.txt').map(l => l.split("").map(Number))
 //const distances = createDistToStart(points)
 
 // The matrix is a square
@@ -138,9 +178,14 @@ const destNode = [last, last]
 const distances = []
 distances[0] = [0]
 
-const path = dijkstra(distances, points, destNode)
-console.log()
-//console.log(Object.keys(path))
+const visited = dijkstra(distances, points, destNode)
+//console.log(Object.keys(visited).map(k => k.split('-').map(Number).map(([i,j]) => points[i][j])))
+//console.log(Object.keys(visited))
 console.log(distances[destNode[0]][destNode[1]])
+
+// printDistances(distances)
+
+
+//printPoints(points)
 
 

@@ -24,17 +24,22 @@ const toBinary = (hex) => {
    return hex.split("").map(c => HexMap[c]).join("")
 }
 
+const getFirst = (str, length) => {
+    return [str.substring(0, length), str.substring(length)]
+}
+
 const processHeader = (binary) => {
-    const version = binary.substring(0, 3)
-    const type = binary.substring(3, 6)
+    const [version, rest1] = getFirst(binary, 3)
+    const [type, rest2] = getFirst(rest1, 3)
 
 
     return [{
         version: parseInt(version, 2), type: parseInt(type, 2)
-    }, binary.substring(6)]
+    }, rest2]
 }
 
 const processLiteralBody = (binary) => {
+    console.log(`Literal packet:`, binary)
     let i = 0
     let number = ""
     let isLast = false
@@ -50,40 +55,53 @@ const processLiteralBody = (binary) => {
     //console.log(`Literal package:`, number)
    // console.log("Remove trailing zeroes:",  (i * blockLength), '=>',  (i * blockLength + (4 - (i * blockLength) % 4) %4))
 
-    const blockToIgnore =  (i * blockLength + (4 - (i * blockLength) % 4) %4)
+    // const blockToIgnore =  (i * blockLength + (4 - (i * blockLength) % 4) %4)
+    const blockToIgnore = i * blockLength 
+
+    
+   console.log(`Literal packet: value:`,parseInt(number, 2), 'rest:', binary.substring(blockToIgnore), 'removed:', blockToIgnore)
     return [parseInt(number, 2), binary.substring(blockToIgnore)]
 }
 
 const processOperator1Body = (binary) => {
-    //console.log(`processOperator1Body:`, binary)
+    console.log(`processOperator1Body:`, binary)
 
-    const packetsNumber = parseInt(binary.substring(0, 11), 2)
+    const [packetsNumber, rest ] = getFirst(binary, 11)
 
-    //console.log(`Packets number:`, packetsNumber)
 
-    return processPacket(binary.substring(11), packetsNumber)
+    console.log(`processOperator1Body: packetsNumber:`, packetsNumber, '(', parseInt(packetsNumber, 2), ')')
+
+    return processPacket(rest,  parseInt(packetsNumber, 2))
 }
 
-
 const processOperator0Body = (binary) => {
+    console.log(`processOperator0Body:`, binary)
+    const [bitLength, rest] = getFirst(binary, 15)
+    
+    const length = parseInt(bitLength, 2)
 
-    //console.log(`processOperator0Body`)
-    const length = parseInt(binary.substring(0, 15), 2)
+    console.log(`processOperator0Body: bitLength:`, bitLength, '(', length, ')')
+    const [packets, rest2] = getFirst(rest, length)
 
-    const packets = binary.substring(15, 15 + length)
-    //console.log(length, '-', binary, '=>', packets)
+    console.log(`processOperator0Body:`, rest2)
+    
     const [value, _] = processPacket(packets)
 
-    return [value, binary.substring(15 + length)]
+    return [value, rest2]
 }
 
 const processOperatorBody = (binary) => {
-    const type = binary.substring(0, 1)
+    const [type, rest] = getFirst(binary, 1)
+
     if (type === "1") {
-        return processOperator1Body(binary.substring(1))
+        return processOperator1Body(rest)
     } else {
-        return processOperator0Body(binary.substring(1))
+        return processOperator0Body(rest)
     }
+}
+
+const sumVersions = (packets) => {
+    return packets.reduce((sum, p)=> sum + p.version + (p.subpackets ? sumVersions(p.subpackets) : 0),0)
 }
 
 
@@ -95,11 +113,11 @@ const processPacket = (binary, packetsNumber) => {
 
     while (rest.length > 0 && (!packetsNumber || packets.length < packetsNumber)) {
         //   console.log(`packetsNumber:`,packetsNumber, `packets:`, packets.length)
-        console.log(rest)
+        //console.log(rest)
         const [header, rest2] = processHeader(rest)
         rest = rest2
 
-        console.log(header)
+        //console.log(header)
         if (header.type === 4) {
             const [value, rest3] = processLiteralBody(rest)
             packets.push(
@@ -109,7 +127,7 @@ const processPacket = (binary, packetsNumber) => {
                 }
             )
             rest = rest3
-            console.log(rest.length)
+            //console.log(rest.length)
         } else {
             // console.log(`processing operator`)
             const [subpackets, rest4] = processOperatorBody(rest)
@@ -117,16 +135,26 @@ const processPacket = (binary, packetsNumber) => {
             packets.push(
                 {
                     ...header,
-                    subpackets
+                    subpackets: subpackets.filter(s => s !== null)
                 }
             )
             rest = rest4
 
         }
     }
-    console.log('exit')
+    //console.log('exit')
 
     return [packets, rest]
+}
+
+const printPacket = ({type, version, value, subpackets}, level = 0)=>{
+    const prefix =  new Array(level).fill('\t').join("")
+    const str = `${prefix}version=${version} type=${type} value=${value}`
+
+    console.log(str)
+    if(subpackets ) {
+        subpackets.forEach(s => printPacket(s, level+1))
+    }
 }
 
 
@@ -134,13 +162,17 @@ const processPacket = (binary, packetsNumber) => {
 // TEST2 = 12
 // TEST3 = 23
 // TEST4 = 31
-const packet = getFileContent('day-16/test3.txt')[0]
+const packet = getFileContent('day-16/input.txt')[0]
 const binary = toBinary(packet)
 
 
-console.log(packet)
-console.log(binary)
+// console.log(packet)
+// console.log(binary)
 
-const [packets, rest] = processPacket(binary)
+ const [packets, rest] = processPacket(binary)
 
-//console.log(JSON.stringify(packets, null, 2))
+
+//const [packets, rest] = processPacket("11101110000000001101010000001100100000100011000001100000")
+ packets.forEach(printPacket)
+
+console.log(sumVersions(packets))

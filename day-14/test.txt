@@ -5,7 +5,7 @@ HH -> N
 CB -> H
 NH -> C
 HB -> C
-HC -> B
+HC -> B 
 HN -> C
 NN -> C
 BH -> H
